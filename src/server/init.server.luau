@@ -1,47 +1,15 @@
+--!strict
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ECS = require(ReplicatedStorage.Shared.ECS)
--- --!strict
--- local Players = game:GetService("Players")
--- local ReplicatedStorage = game:GetService("ReplicatedStorage")
--- local _RunService = game:GetService("RunService")
--- local ECS = require(ReplicatedStorage.Shared.ECS)
--- local random = Random.new(tick())
-
--- type PlayerData =                     {Instance:Player,JoinTime:number}
--- local PlayerData = ECS.Component()  ::ECS.Component<PlayerData>
--- local Intruder = ECS.Component()    ::ECS.TagComponent
 
 
--- function IntruderSystem()
---     for PlayerEntity:ECS.Entity,ThisPlayerData:PlayerData in ECS.Query(PlayerData,Intruder) do
---         print(PlayerEntity,ThisPlayerData,PlayerData,Intruder)
---         if not ECS.Get(PlayerEntity, Intruder) or random:NextNumber() < 0.5 then continue end
---         print(ThisPlayerData.Instance.Name, "Intruder Found.")
---         ThisPlayerData.Instance:Kick()
---         ECS.Remove(PlayerEntity,Intruder);
---         print(ThisPlayerData.Instance.Name, "Intruder Eliminated.")
---     end
--- end
+local a = ECS.Component() :: ECS.Component
+local b = ECS.Component() :: ECS.Component
+ECS.FreeComponent(a)
+local c = ECS.Component() :: ECS.Component
 
+local t = ECS.Entity() :: ECS.Entity
 
+ECS.Add(t,c)
 
--- Players.PlayerAdded:Connect(function(plr: Player)
---     local PlayerEntity = ECS.Entity()
---     ECS.Set(PlayerEntity, PlayerData, {
---         Instance=plr,
---         JoinTime=tick(),
---     })
-
-    
---     ECS.Add(PlayerEntity, Intruder)
---     IntruderSystem();
--- end)
-
-
-
-local a = ECS.Component() -- 0
-local b = ECS.Component() -- 1
-local c = ECS.Component() -- 2
-ECS.FreeComponent(b) -- 1 is free
-local d = ECS.Component() -- 1
-print(ECS.ReadComponentId(d))
+print(ECS.ReadComponentId(c))

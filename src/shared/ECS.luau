@@ -2,14 +2,14 @@
 local TableUtils = require(script.Parent.TableUtils)
 type HashMap<K,V> = {[K]:V}
 
-export type ECSID<T=any> = {__T:T}
-export type Entity<T=nil> = {__T:T}
-export type Component<T=any> = {__T:T}
+export type ECSID<T=any> = {__T:T}&number
+export type Entity<T=nil> = {__T:T}&number
+export type Component<T=any> = {__T:T}&number
 
 export type TagComponent = Component<true>
 
 type ComponentData<T> = HashMap<Entity,T>
-type World<T> = HashMap< Component<T>, ComponentData<T> >
+type World<T=any> = HashMap< Component<T>, ComponentData<T> >
 
 local ComponentMask = bit32.lshift(1, 20)
 local FreeIds: HashMap<ECSID,true> = {}
@@ -20,12 +20,12 @@ local ComponentNextId = ComponentMask
 local EntityNextId = 0
 
 
-local World : World<any> = {}
+local World : World = {}
 local export = {}
 
 do --Assertion logic.
     function export.IsComponent<T>(object:ECSID<T>)
-        return bit32.band((object::any)::number,ComponentMask) == ComponentMask
+        return bit32.band(object,ComponentMask) == ComponentMask
     end
 
     function export.AssertComponent<T>(object:ECSID<T>)
@@ -43,60 +43,61 @@ end
 
 do --Creation logic.
     function export.Component()
-        local FreeComponentsIds = TableUtils.Filter(FreeIds, function(Key: ECSID<any>, Value: boolean):boolean
+        local FreeComponentsIds = TableUtils.Filter(FreeIds, function(Key: ECSID, Value: boolean):boolean
              return export.IsComponent(Key)
         end)
 
-        local self : Component = -1::any
+        local ID = -1
 
         if TableUtils.IsEmpty(FreeComponentsIds) then
-            self = ComponentNextId::any
+            ID = ComponentNextId
             ComponentNextId += 1
             ComponentCount += 1
         else
-            self = next(FreeComponentsIds)::Component
+            ID = next(FreeComponentsIds)::Component
         end
 
-        World[self] = {};
-
-        
-        return self;
+        World[ID::Component] = {};
+        return ID;
     end
 
 
     function export.Entity() : Entity
-                local FreeEntitesIds = TableUtils.Filter(FreeIds, function(Key: ECSID<any>, Value: boolean):boolean
+                local FreeEntitesIds = TableUtils.Filter(FreeIds, function(Key: ECSID, Value: boolean):boolean
              return not export.IsComponent(Key)
         end)
 
-        local self : Entity = -1::any
+        local ID = -1
 
         if TableUtils.IsEmpty(FreeEntitesIds) then
-            self = EntityNextId::any
+            ID = EntityNextId
             EntityNextId += 1
             EntityCount += 1
         else
-            self = next(FreeEntitesIds)::Entity
+            ID = next(FreeEntitesIds)::Entity
         end
 
-        return self;
+        return ID::Entity;
     end
 end
 
 do --Freeing logic.
     function export.FreeComponent<T>(Component:Component<T>)
         export.AssertComponent(Component)
+
         for Entity in World[Component] do
-            Component[Entity] = nil
+            World[Component][Entity] = nil
         end
+        World[Component] = nil;
+        
         ComponentCount -= 1
         FreeIds[Component] = true;
     end
 
     function export.FreeEntity(Entity:Entity)
         export.AssertEntity(Entity)
-        for Component in World do
-            Component[Entity] = nil
+        for ComponentId,ComponentData in World do
+            ComponentData[Entity] = nil
         end
         EntityCount -= 1;
         FreeIds[Entity] = true;
@@ -105,7 +106,7 @@ end
 
 do -- Setting Logic
     function export.Add(Entity:Entity,Component:TagComponent)
-        export.AssertComponent(Component)
+        export.AssertEntityComponent(Entity, Component)
         World[Component][Entity] = true;
     end
 
@@ -126,7 +127,7 @@ do -- Setting Logic
 end
 
 function export.ReadComponentId<T>(Component:Component<T>)
-    return bit32.bxor(Component::any,ComponentMask)
+    return bit32.bxor(Component,ComponentMask)
 end
 
 
@@ -134,7 +135,7 @@ do --Logic logic ? (starting to lose its meaning)
     function export.Has(Entity:Entity,...:Component)
         export.AssertEntity(Entity)
         local Args = {...}
-        local Passed = TableUtils.All(Args, function(Index: number, ComponentId: Component<any>): boolean 
+        local Passed = TableUtils.All(Args, function(Index: number, ComponentId: Component): boolean 
             export.AssertComponent(ComponentId)
             return World[ComponentId] ~= nil
         end)
@@ -145,30 +146,30 @@ end
 
 do --Iteration logic.
     -- no <...T>    ):<
-    function export.Query<T...>(...:Component<any>)
-        local Args = {...} :: {Component<any>}
+    function export.Query<T...>(...:Component)
+        local Args = {...} :: {Component}
         local PassedEntites:HashMap<Entity,true> = {}
         
 
         for _,ComponentID in Args do
-            PassedEntites = TableUtils.MixTables(PassedEntites::any, World[ComponentID])
+            PassedEntites = TableUtils.MixTables(PassedEntites, World[ComponentID])
         end
         for _,ComponentID in Args do
-            PassedEntites = TableUtils.AndTables(PassedEntites::any, World[ComponentID])
+            PassedEntites = TableUtils.AndTables(PassedEntites, World[ComponentID])
         end
 
 
-        local EntityID : Entity = next(PassedEntites)::any;
-        local function iter(): any
-            if not EntityID then return nil end
+        local EntityID : Entity = next(PassedEntites)::Entity;
+        local function iter()
+            if EntityID == nil then return nil end
 
-            local ReturnBuffer = {EntityID}
+            local ReturnBuffer : {} = {EntityID}
             
             for _,ComponentId in Args do
                 ReturnBuffer[#ReturnBuffer+1] = World[ComponentId][EntityID]
             end
             
-            EntityID = next(PassedEntites,EntityID)::any;
+            EntityID = next(PassedEntites,EntityID)::Entity;
             return unpack(ReturnBuffer);
 
         end

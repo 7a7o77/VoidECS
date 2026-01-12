@@ -2,19 +2,19 @@
 local export = {}
 type HashMap<K,V> = {[K]:V}
 
-function export.MixTables<A,B>(TableA:{[A]:B},TableB:{[A]:B})
-    local Result = table.clone(TableA) :: {[A]:B}
+function export.MixTables<A,B,C,D>(TableA:HashMap<A,B>,TableB:HashMap<C,D>)
+    local Result = table.clone(TableA)::{}
     for i,v in TableB do Result[i] = v end
 
-    return Result
+    return Result :: typeof(TableA)&typeof(TableB)
 end
 
-function export.AndTables<A,B>(TableA:{[A]:B},TableB:{[A]:B})
-    local Result = table.clone(TableA) 
+function export.AndTables<A,B,D,C>(TableA:HashMap<A,B>,TableB:HashMap<D,C>)
+    local Result = table.clone(TableA) :: any
     for i,v in TableA do 
-        if not TableB[i] then Result[i] = nil end
+        if not (TableB::any)[i] then Result[i] = nil end
     end
-    return Result
+    return Result :: typeof(TableA)&typeof(TableB)
 end
 
 function export.All<A,B>(Target:{[A]:B},predicate:(Key:A,Value:B)->boolean) : boolean

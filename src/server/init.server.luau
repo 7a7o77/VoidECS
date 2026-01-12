@@ -25,7 +25,7 @@ end
 
 Players.PlayerAdded:Connect(function(plr: Player)
     local PlayerEntity = ECS.Entity()
-    ECS.SetComponent(PlayerEntity, PlayerData, {
+    ECS.Set(PlayerEntity, PlayerData, {
         Instance=plr,
         JoinTime=tick(),
     })

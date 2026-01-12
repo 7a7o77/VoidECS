@@ -14,12 +14,10 @@ type World<T> = HashMap< Component<T>, ComponentData<T> >
 local ComponentMask = bit32.lshift(1, 20)
 local FreeIds: HashMap<ECSID,true> = {}
 
-
-
 local EntityCount = 0
 local ComponentCount = 0
-local ComponentNextId = 0
-local EntityNextId = ComponentMask
+local ComponentNextId = ComponentMask
+local EntityNextId = 0
 
 
 local World : World<any> = {}
@@ -52,11 +50,11 @@ do --Creation logic.
         local self : Component = -1::any
 
         if TableUtils.IsEmpty(FreeComponentsIds) then
-            self = next(FreeComponentsIds)::Component
-        else
             self = ComponentNextId::any
             ComponentNextId += 1
             ComponentCount += 1
+        else
+            self = next(FreeComponentsIds)::Component
         end
 
         World[self] = {};
@@ -74,22 +72,20 @@ do --Creation logic.
         local self : Entity = -1::any
 
         if TableUtils.IsEmpty(FreeEntitesIds) then
-            self = next(FreeEntitesIds)::Entity
-        else
             self = EntityNextId::any
             EntityNextId += 1
             EntityCount += 1
+        else
+            self = next(FreeEntitesIds)::Entity
         end
 
-        World[self] = {};
-
-        
         return self;
     end
 end
 
 do --Freeing logic.
     function export.FreeComponent<T>(Component:Component<T>)
+        export.AssertComponent(Component)
         for Entity in World[Component] do
             Component[Entity] = nil
         end
@@ -98,6 +94,7 @@ do --Freeing logic.
     end
 
     function export.FreeEntity(Entity:Entity)
+        export.AssertEntity(Entity)
         for Component in World do
             Component[Entity] = nil
         end
@@ -128,6 +125,9 @@ do -- Setting Logic
     end
 end
 
+function export.ReadComponentId<T>(Component:Component<T>)
+    return bit32.bxor(Component::any,ComponentMask)
+end
 
 
 do --Logic logic ? (starting to lose its meaning)

@@ -14,7 +14,7 @@ type World<T=any> = HashMap< Component<T>, ComponentData<T> >
 local ComponentFlagMask = bit32.lshift(1, 31)
 local PairFlagMask = bit32.lshift(3, 30)
 
--- local TargetMask = 1073709056
+local TargetMask = 1073709056
 
 local FreeEntityIds: HashMap<Entity,true> = {}
 local FreeComponentIds: HashMap<Component<unknown>,true> = {}
@@ -108,35 +108,8 @@ do --Creation logic.
 
         return ID::any;
     end
-end
 
-do --Freeing logic.
-    function export.FreeComponent<T>(Component:Component<T>)
-        export.AssertComponent(Component)
 
-        for Entity in World[Component] do
-            World[Component][Entity] = nil
-        end
-        World[Component] = nil;
-        
-        ComponentCount -= 1
-
-        if (export.IsPair(Component)) then 
-            FreeComponentIds[bit32.replace(Component::any,0,15,16)::any] = true;
-        else
-            FreeComponentIds[Component] = true
-        end
-
-    end
-
-    function export.FreeEntity(Entity:Entity)
-        export.AssertEntity(Entity)
-        for ComponentId,ComponentData in World do
-            ComponentData[Entity] = nil
-        end
-        EntityCount -= 1;
-        FreeEntityIds[Entity] = true;
-    end
 end
 
 do -- Setting Logic
@@ -186,17 +159,33 @@ end
 
 do --Iteration logic.
     -- no <...T>    ):<
+
+    function export.GetPairsWithTarget(Entity:Entity) : World
+        return TableUtils.Filter(World, function(Component: Component<any>, _): boolean
+            export.AssertEntity(Entity)
+
+            if (not bit32.band(Component::any,PairFlagMask) or
+             bit32.band(Component::any,TargetMask) ~= Entity::any) then return false end
+
+            return true
+        end)
+    end
+
+
     function export.Query<T...>(...:Component)
         local Args = {...} :: {Component}
         local PassedEntites:HashMap<Entity,true> = {}
         
 
-        for _,ComponentID in Args do
-            PassedEntites = TableUtils.MixTables(PassedEntites, World[ComponentID])
+        local base = Args[1];
+
+        for EntityId in World[base] do
+            if not export.Has(EntityId,...) then
+                continue
+            end
+            PassedEntites[EntityId] = true
         end
-        for _,ComponentID in Args do
-            PassedEntites = TableUtils.AndTables(PassedEntites, World[ComponentID])
-        end
+
 
 
         local EntityID : Entity = next(PassedEntites)::Entity;
@@ -216,7 +205,7 @@ do --Iteration logic.
         end
 
 
-        return setmetatable(table.clone(PassedEntites), {__iter = function()
+        return setmetatable(PassedEntites, {__iter = function()
                 return iter
         end})
     end
@@ -227,6 +216,41 @@ do --Iteration logic.
         end
     end
 
+end
+
+
+do --Deletion logic.
+    function export.FreeComponent<T>(Component:Component<T>)
+        export.AssertComponent(Component)
+
+        for Entity in World[Component] do
+            World[Component][Entity] = nil
+        end
+        World[Component] = nil;
+        
+        ComponentCount -= 1
+
+        if (export.IsPair(Component)) then 
+            FreeComponentIds[bit32.replace(Component::any,0,15,16)::any] = true;
+        else
+            FreeComponentIds[Component] = true
+        end
+
+    end
+
+    function export.FreeEntity(Entity:Entity)
+        export.AssertEntity(Entity)
+        for ComponentId,ComponentData in World do
+            ComponentData[Entity] = nil
+        end
+        EntityCount -= 1;
+        FreeEntityIds[Entity] = true;
+
+        for Component in export.GetPairsWithTarget(Entity) do
+            export.FreeComponent(Component)
+        end
+        
+    end
 end
 
 return export

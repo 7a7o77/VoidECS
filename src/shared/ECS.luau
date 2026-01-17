@@ -5,7 +5,6 @@ type HashMap<K,V> = {[K]:V}
 export type ECSID<T=unknown> = {__T:T}
 export type Entity<T=nil> = {__T:T}
 export type Component<T=unknown> = {__T:T}
--- export type Pair<T=nil> = Component<{Target:Entity,Data:T}>
 export type TagComponent = Component<true>
 
 type ComponentData<T> = HashMap<Entity,T>
@@ -87,6 +86,7 @@ do --Creation logic.
             ComponentCount += 1
         else
             ID = next(FreeComponentsIds)::any
+            FreeIds[ID] = nil
         end
 
         ID = ID::any + bit32.lshift(Target::any, 15) + (PairFlagMask-ComponentFlagMask)
@@ -109,6 +109,7 @@ do --Creation logic.
             EntityCount += 1
         else
             ID = next(FreeEntitesIds)::any
+            FreeIds[ID] = nil;
         end
 
         return ID::any;

@@ -16,11 +16,12 @@ local PairFlagMask = bit32.lshift(3, 30)
 
 -- local TargetMask = 1073709056
 
-local FreeIds: HashMap<ECSID,true> = {}
+local FreeEntityIds: HashMap<Entity,true> = {}
+local FreeComponentIds: HashMap<Component<unknown>,true> = {}
 
 local EntityCount = 0
 local ComponentCount = 0
-local ComponentNextId = ComponentFlagMask
+local ComponentNextId = 0
 local EntityNextId = 0
 
 
@@ -55,41 +56,38 @@ end
 
 do --Creation logic.
     function export.Component()
-        local FreeComponentsIds = TableUtils.Filter(FreeIds, function(Key: ECSID, Value: boolean):boolean
-             return export.IsComponent(Key)
-        end)
 
         local ID = (-1 :: any) :: Component
 
-        if TableUtils.IsEmpty(FreeComponentsIds) then
-            ID = ComponentNextId :: any
+        if TableUtils.IsEmpty(FreeComponentIds) then
+            ID = ComponentNextId :: any+PairFlagMask
             ComponentNextId += 1
             ComponentCount += 1
         else
-            ID = next(FreeComponentsIds)::any
+            ID = next(FreeComponentIds)::any
+            FreeComponentIds[ID] = nil;
         end
 
+    
         World[ID::any] = {};
         return ID;
     end
 
     function export.Pair(Target:Entity)
-        local FreeComponentsIds = TableUtils.Filter(FreeIds, function(Key: ECSID, Value: boolean):boolean
-             return export.IsComponent(Key)
-        end)
-
         local ID = (-1 :: any) :: Component
 
-        if TableUtils.IsEmpty(FreeComponentsIds) then
+        if TableUtils.IsEmpty(FreeComponentIds) then
             ID = ComponentNextId :: any
             ComponentNextId += 1
             ComponentCount += 1
         else
-            ID = next(FreeComponentsIds)::any
-            FreeIds[ID] = nil
+            ID = next(FreeComponentIds)::any
+            FreeComponentIds[ID] = nil
         end
 
-        ID = ID::any + bit32.lshift(Target::any, 15) + (PairFlagMask-ComponentFlagMask)
+        
+
+        ID = ID::any + bit32.lshift(Target::any, 15) + (PairFlagMask)
 
         World[ID::any] = {};
         return ID;
@@ -97,19 +95,15 @@ do --Creation logic.
 
 
     function export.Entity() : Entity
-                local FreeEntitesIds = TableUtils.Filter(FreeIds, function(Key: ECSID, Value: boolean):boolean
-             return not export.IsComponent(Key)
-        end)
-
         local ID = (-1 :: any) :: Entity
 
-        if TableUtils.IsEmpty(FreeEntitesIds) then
+        if TableUtils.IsEmpty(FreeEntityIds) then
             ID = EntityNextId :: any
             EntityNextId += 1
             EntityCount += 1
         else
-            ID = next(FreeEntitesIds)::any
-            FreeIds[ID] = nil;
+            ID = next(FreeEntityIds)::any
+            FreeEntityIds[ID] = nil;
         end
 
         return ID::any;
@@ -126,7 +120,13 @@ do --Freeing logic.
         World[Component] = nil;
         
         ComponentCount -= 1
-        FreeIds[Component] = true;
+
+        if (export.IsPair(Component)) then 
+            FreeComponentIds[bit32.replace(Component::any,0,15,16)::any] = true;
+        else
+            FreeComponentIds[Component] = true
+        end
+
     end
 
     function export.FreeEntity(Entity:Entity)
@@ -135,7 +135,7 @@ do --Freeing logic.
             ComponentData[Entity] = nil
         end
         EntityCount -= 1;
-        FreeIds[Entity] = true;
+        FreeEntityIds[Entity] = true;
     end
 end
 
@@ -167,7 +167,7 @@ do -- Setting Logic
 end
 
 function export.ReadComponentId<T>(Component:Component<T>)
-    return bit32.bxor(Component::any,ComponentFlagMask)
+    return bit32.replace(Component::any,0,15,17)
 end
 
 
@@ -177,7 +177,7 @@ do --Logic logic ? (starting to lose its meaning)
         local Args = {...}
         local Passed = TableUtils.All(Args, function(Index: number, ComponentId: Component): boolean 
             export.AssertComponent(ComponentId)
-            return World[ComponentId] ~= nil
+            return World[ComponentId][Entity] ~= nil
         end)
 
         return Passed;

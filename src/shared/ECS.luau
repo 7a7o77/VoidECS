@@ -2,21 +2,26 @@
 local TableUtils = require(script.Parent.TableUtils)
 type HashMap<K,V> = {[K]:V}
 
-export type ECSID<T=any> = {__T:T}&number
-export type Entity<T=nil> = {__T:T}&number
-export type Component<T=any> = {__T:T}&number
-
+export type ECSID<T=unknown> = {__T:T}
+export type Entity<T=nil> = {__T:T}
+export type Component<T=unknown> = {__T:T}
+-- export type Pair<T=nil> = Component<{Target:Entity,Data:T}>
 export type TagComponent = Component<true>
 
 type ComponentData<T> = HashMap<Entity,T>
 type World<T=any> = HashMap< Component<T>, ComponentData<T> >
 
-local ComponentMask = bit32.lshift(1, 20)
+
+local ComponentFlagMask = bit32.lshift(1, 31)
+local PairFlagMask = bit32.lshift(3, 30)
+
+-- local TargetMask = 1073709056
+
 local FreeIds: HashMap<ECSID,true> = {}
 
 local EntityCount = 0
 local ComponentCount = 0
-local ComponentNextId = ComponentMask
+local ComponentNextId = ComponentFlagMask
 local EntityNextId = 0
 
 
@@ -25,19 +30,27 @@ local export = {}
 
 do --Assertion logic.
     function export.IsComponent<T>(object:ECSID<T>)
-        return bit32.band(object,ComponentMask) == ComponentMask
+        return bit32.band(object::any,ComponentFlagMask) == ComponentFlagMask
+    end
+
+    function export.IsPair<T>(object:ECSID<T>)
+        return bit32.band(object::any,PairFlagMask) == PairFlagMask
     end
 
     function export.AssertComponent<T>(object:ECSID<T>)
-        assert(export.IsComponent(object),"Type Error! Expected component got entity.")
+        assert(export.IsComponent(object),"Type Error! Expected component.")
     end
 
     function export.AssertEntity<T>(object:ECSID<T>)
-        assert(not export.IsComponent(object),"Type Error! Expected entity got component.")
+        assert(not export.IsComponent(object),"Type Error! Expected entity.")
     end
 
     function export.AssertEntityComponent<T1,T2>(Entity:ECSID<T1>,Component:ECSID<T2>)
         export.AssertEntity(Entity);export.AssertComponent(Component);
+    end
+
+    function export.AssertPair<T1,T2>(object:ECSID<T1>)
+        assert(export.IsPair(object), "Type Error! expected pair")
     end
 end
 
@@ -47,17 +60,38 @@ do --Creation logic.
              return export.IsComponent(Key)
         end)
 
-        local ID = -1
+        local ID = (-1 :: any) :: Component
 
         if TableUtils.IsEmpty(FreeComponentsIds) then
-            ID = ComponentNextId
+            ID = ComponentNextId :: any
             ComponentNextId += 1
             ComponentCount += 1
         else
-            ID = next(FreeComponentsIds)::Component
+            ID = next(FreeComponentsIds)::any
         end
 
-        World[ID::Component] = {};
+        World[ID::any] = {};
+        return ID;
+    end
+
+    function export.Pair(Target:Entity)
+        local FreeComponentsIds = TableUtils.Filter(FreeIds, function(Key: ECSID, Value: boolean):boolean
+             return export.IsComponent(Key)
+        end)
+
+        local ID = (-1 :: any) :: Component
+
+        if TableUtils.IsEmpty(FreeComponentsIds) then
+            ID = ComponentNextId :: any
+            ComponentNextId += 1
+            ComponentCount += 1
+        else
+            ID = next(FreeComponentsIds)::any
+        end
+
+        ID = ID::any + bit32.lshift(Target::any, 15) + (PairFlagMask-ComponentFlagMask)
+
+        World[ID::any] = {};
         return ID;
     end
 
@@ -67,17 +101,17 @@ do --Creation logic.
              return not export.IsComponent(Key)
         end)
 
-        local ID = -1
+        local ID = (-1 :: any) :: Entity
 
         if TableUtils.IsEmpty(FreeEntitesIds) then
-            ID = EntityNextId
+            ID = EntityNextId :: any
             EntityNextId += 1
             EntityCount += 1
         else
-            ID = next(FreeEntitesIds)::Entity
+            ID = next(FreeEntitesIds)::any
         end
 
-        return ID::Entity;
+        return ID::any;
     end
 end
 
@@ -105,7 +139,7 @@ do --Freeing logic.
 end
 
 do -- Setting Logic
-    function export.Add(Entity:Entity,Component:TagComponent)
+    function export.Add<A>(Entity:Entity,Component:TagComponent)
         export.AssertEntityComponent(Entity, Component)
         World[Component][Entity] = true;
     end
@@ -113,6 +147,11 @@ do -- Setting Logic
     function export.Get<V>(Entity:Entity,Component:Component<V>) : V
         export.AssertEntityComponent(Entity, Component)
         return World[Component][Entity] :: V
+    end
+
+    function export.GetPairTarget<V>(Pair:Component<V>) : Entity
+        export.AssertPair(Pair)
+        return (bit32.extract(Pair::any,15,15)::any)::Entity
     end
 
     function export.Set<T>(Entity:Entity,Component:Component<T>,Value:T)
@@ -127,7 +166,7 @@ do -- Setting Logic
 end
 
 function export.ReadComponentId<T>(Component:Component<T>)
-    return bit32.bxor(Component,ComponentMask)
+    return bit32.bxor(Component::any,ComponentFlagMask)
 end
 
 
@@ -160,6 +199,7 @@ do --Iteration logic.
 
 
         local EntityID : Entity = next(PassedEntites)::Entity;
+
         local function iter()
             if EntityID == nil then return nil end
 
@@ -179,6 +219,13 @@ do --Iteration logic.
                 return iter
         end})
     end
+
+    function export.ForEach<T>(Component:Component<T>,CallBack:(EntityID:Entity,Value:T)->())
+        for EntityId,Value:T in World[Component] do
+            CallBack(EntityId,Value);
+        end
+    end
+
 end
 
 return export

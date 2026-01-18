@@ -13,8 +13,7 @@ type World<T=any> = HashMap< Component<T>, ComponentData<T> >
 
 local ComponentFlagMask = 0b10000000000000000000000000000000
 local PairFlagMask = 0b11000000000000000000000000000000
-
-local TargetMask =  0b00111111111111111000000000000000
+-- local TargetMask =  0b00111111111111111000000000000000
 
 local FreeEntityIds: HashMap<Entity,true> = {}
 local FreeComponentIds: HashMap<Component<unknown>,true> = {}
@@ -142,7 +141,6 @@ end
 function export.ReadComponentId<T>(Component:Component<T>)
     return bit32.replace(Component::any,0,15,17)
 end
-
 
 do --Logic logic ? (starting to lose its meaning)
     function export.Has(Entity:Entity,...:Component)

@@ -17,26 +17,26 @@ function export.AndTables<A,B,D,C>(TableA:HashMap<A,B>,TableB:HashMap<D,C>)
     return Result :: typeof(TableA)&typeof(TableB)
 end
 
-function export.All<A,B>(Target:{[A]:B},predicate:(Key:A,Value:B)->boolean) : boolean
-for K,V in Target do
+function export.All<A,B>(Input:{[A]:B},predicate:(Key:A,Value:B)->boolean) : boolean
+for K,V in Input do
     if not predicate(K, V) then return false end
 end
 return true
 end
 
-function export.Filter<K,V>(Target:{[K]:V},predicate:(Key:K,Value:V)-> boolean)
+function export.Filter<K,V>(Input:{[K]:V},predicate:(Key:K,Value:V)-> boolean)
     local Result : {[K]:V} = {}
-    for Key,Value in Target do
+    for Key,Value in Input do
         if predicate(Key, Value) then Result[Key] = Value end
     end
     return Result
 end
 
-function export.GetGaps<V>(Target:{[number]:V})
+function export.GetGaps<V>(Input:{[number]:V})
     local Index = 0
     local Result : HashMap<number,true> = {}
     while true do
-        local NewIndex = next(Target,Index)
+        local NewIndex = next(Input,Index)
         if (NewIndex == nil) then break end
         if (NewIndex > Index + 1) then Result[NewIndex+1] = true end 
         Index = NewIndex
@@ -44,10 +44,10 @@ function export.GetGaps<V>(Target:{[number]:V})
     return Result;
 end
 
-function export.GetFirstGap<V>(Target:{[number]:V})
+function export.GetFirstGap<V>(Input:{[number]:V})
     local Index = 0
     while true do
-        local NewIndex = next(Target,Index)
+        local NewIndex = next(Input,Index)
         if (NewIndex == nil) then break end
         if (NewIndex > Index + 1) then return NewIndex+1 end 
         Index = NewIndex
@@ -55,18 +55,18 @@ function export.GetFirstGap<V>(Target:{[number]:V})
     return -1;
 end
 
-function export.HasGap<V>(Target:{[number]:V})
+function export.HasGap<V>(Input:{[number]:V})
     local Index = 0
 
     while true do
-        local NewIndex = next(Target,Index)
+        local NewIndex = next(Input,Index)
         if (NewIndex == nil) then return true end
         if (NewIndex > Index + 1) then return false end 
     end
 end
 
-function export.IsEmpty<K,V>(Target:{[K]:V})
-    return next(Target) == nil
+function export.IsEmpty<K,V>(Input:{[K]:V})
+    return next(Input) == nil
 end
 
 return export

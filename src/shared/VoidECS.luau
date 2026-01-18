@@ -72,7 +72,7 @@ do --Creation logic.
         return ID;
     end
 
-    function export.Pair(Target:Entity)
+    function export.Pair()
         local ID = (-1 :: any) :: Component
 
         if TableUtils.IsEmpty(FreeComponentIds) then
@@ -85,11 +85,16 @@ do --Creation logic.
         end
 
         
+        return function(Target:Entity) : Component
+            local PairID = ID::any + bit32.lshift(Target::any, 15) + (PairFlagMask)
 
-        ID = ID::any + bit32.lshift(Target::any, 15) + (PairFlagMask)
+            if World[PairID::any] == nil then
+                World[PairID::any] = {};
+            end
+            
+            return PairID;
+        end
 
-        World[ID::any] = {};
-        return ID;
     end
 
 
@@ -112,7 +117,7 @@ do --Creation logic.
 end
 
 do -- Setting Logic
-    function export.Add<A>(Entity:Entity,Component:TagComponent)
+    function export.Add<A>(Entity:Entity,Component:Component)
         export.AssertEntityComponent(Entity, Component)
         World[Component][Entity] = true;
     end

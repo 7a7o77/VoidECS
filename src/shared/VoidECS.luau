@@ -11,10 +11,10 @@ type ComponentData<T> = HashMap<Entity,T>
 type World<T=any> = HashMap< Component<T>, ComponentData<T> >
 
 
-local ComponentFlagMask = bit32.lshift(1, 31)
-local PairFlagMask = bit32.lshift(3, 30)
+local ComponentFlagMask = 0b10000000000000000000000000000000
+local PairFlagMask = 0b11000000000000000000000000000000
 
-local TargetMask = 1073709056
+local TargetMask =  0b00111111111111111000000000000000
 
 local FreeEntityIds: HashMap<Entity,true> = {}
 local FreeComponentIds: HashMap<Component<unknown>,true> = {}
@@ -60,7 +60,7 @@ do --Creation logic.
         local ID = (-1 :: any) :: Component
 
         if TableUtils.IsEmpty(FreeComponentIds) then
-            ID = ComponentNextId :: any+PairFlagMask
+            ID = ComponentNextId :: any+ComponentFlagMask
             ComponentNextId += 1
             ComponentCount += 1
         else
@@ -161,11 +161,10 @@ do --Iteration logic.
     -- no <...T>    ):<
 
     function export.GetPairsWithTarget(Entity:Entity) : World
+        export.AssertEntity(Entity)
         return TableUtils.Filter(World, function(Component: Component<any>, _): boolean
-            export.AssertEntity(Entity)
-
-            if (not bit32.band(Component::any,PairFlagMask) or
-             bit32.band(Component::any,TargetMask) ~= Entity::any) then return false end
+            if (bit32.band(Component::any,PairFlagMask) ~= PairFlagMask or
+             bit32.extract(Component::any,15,15) ~= Entity::any) then return false end
 
             return true
         end)

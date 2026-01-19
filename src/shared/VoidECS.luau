@@ -23,7 +23,6 @@ local ComponentCount = 0
 local ComponentNextId = 0
 local EntityNextId = 0
 
-
 local World : World = {}
 local export = {}
 

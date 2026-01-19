@@ -166,6 +166,7 @@ do --Iteration logic.
         end)
     end
 
+    -- TODO : Add typechecking.
     function export.Query<T...>(...:Component)
         local Args = {...} :: {Component}
         local PassedEntites:HashMap<Entity,true> = {}

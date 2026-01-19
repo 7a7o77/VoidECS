@@ -4,7 +4,7 @@ type HashMap<K,V> = {[K]:V}
 
 export type ECSID<T=unknown> = {__T:T}
 export type Entity<T=nil> = {__T:T}
-export type Component<T=unknown> = {__T:T}
+export type Component<T=any> = {__T:T}
 export type TagComponent = Component<true>
 
 type ComponentData<T> = HashMap<Entity,T>
@@ -22,6 +22,7 @@ local EntityCount = 0
 local ComponentCount = 0
 local ComponentNextId = 0
 local EntityNextId = 0
+
 
 local World : World = {}
 local export = {}
@@ -47,7 +48,7 @@ do --Assertion logic.
         export.AssertEntity(Entity);export.AssertComponent(Component);
     end
 
-    function export.AssertPair<T1>(object:ECSID<T1>)
+    function export.AssertPair<T1,T2>(object:ECSID<T1>)
         assert(export.IsPair(object), "Type Error! expected pair")
     end
 end
@@ -194,15 +195,14 @@ do --Iteration logic.
         local function iter()
             if EntityID == nil then return nil end
 
-            local ReturnBuffer : {} = {EntityID}
+            local ReturnBuffer = {EntityID}
             
             for _,ComponentId in Args do
                 ReturnBuffer[#ReturnBuffer+1] = World[ComponentId][EntityID]
             end
             
             EntityID = next(PassedEntites,EntityID)::Entity;
-            return unpack(ReturnBuffer);
-
+            return unpack(ReturnBuffer::any);
         end
 
 

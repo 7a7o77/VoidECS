@@ -10,7 +10,6 @@ export type TagComponent = Component<true>
 type ComponentData<T> = HashMap<Entity,T>
 type World<T=any> = HashMap< Component<T>, ComponentData<T> >
 
-
 local ComponentFlagMask = 0b10000000000000000000000000000000
 local PairFlagMask = 0b11000000000000000000000000000000
 -- local TargetMask =  0b00111111111111111000000000000000
@@ -66,7 +65,6 @@ do --Creation logic.
             ID = next(FreeComponentIds)::any
             FreeComponentIds[ID] = nil;
         end
-
     
         World[ID::any] = {};
         return ID;
@@ -83,7 +81,6 @@ do --Creation logic.
             ID = next(FreeComponentIds)::any
             FreeComponentIds[ID] = nil
         end
-
         
         return function(Target:Entity) : Component
             local PairID = ID::any + bit32.lshift(Target::any, 15) + (PairFlagMask)
@@ -94,9 +91,7 @@ do --Creation logic.
             
             return PairID;
         end
-
     end
-
 
     function export.Entity() : Entity
         local ID = (-1 :: any) :: Entity
@@ -112,8 +107,6 @@ do --Creation logic.
 
         return ID::any;
     end
-
-
 end
 
 do -- Setting Logic
@@ -173,12 +166,10 @@ do --Iteration logic.
         end)
     end
 
-
     function export.Query<T...>(...:Component)
         local Args = {...} :: {Component}
         local PassedEntites:HashMap<Entity,true> = {}
         
-
         local base = Args[1];
 
         for EntityId in World[base] do
@@ -187,8 +178,6 @@ do --Iteration logic.
             end
             PassedEntites[EntityId] = true
         end
-
-
 
         local EntityID : Entity = next(PassedEntites)::Entity;
 
@@ -205,7 +194,6 @@ do --Iteration logic.
             return unpack(ReturnBuffer::any);
         end
 
-
         return setmetatable(PassedEntites, {__iter = function()
                 return iter
         end})
@@ -216,7 +204,6 @@ do --Iteration logic.
             CallBack(EntityId,Value);
         end
     end
-
 end
 
 

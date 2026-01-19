@@ -48,7 +48,7 @@ do --Assertion logic.
         export.AssertEntity(Entity);export.AssertComponent(Component);
     end
 
-    function export.AssertPair<T1,T2>(object:ECSID<T1>)
+    function export.AssertPair<T1>(object:ECSID<T1>)
         assert(export.IsPair(object), "Type Error! expected pair")
     end
 end

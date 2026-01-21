@@ -3,7 +3,7 @@ local export = {}
 type HashMap<K,V> = {[K]:V}
 
 function export.MixTables<A,B,C,D>(TableA:HashMap<A,B>,TableB:HashMap<C,D>)
-    local Result = table.clone(TableA) :: any
+    local Result = table.clone(TableA) ::{any}
     for i,v in TableB do Result[i] = v end
 
     return Result :: typeof(TableA)&typeof(TableB)

@@ -2,9 +2,9 @@
 local TableUtils = require(script.Parent.TableUtils)
 type HashMap<K,V> = {[K]:V}
 
-export type ECSID<T=unknown> = {__T:T}
-export type Entity<T=nil> = {__T:T}
-export type Component<T=any> = {__T:T}
+export type ECSID<T=unknown> = {read __T:T}
+export type Entity<T=nil> = {read __T:T}
+export type Component<T=any> = {read __T:T}
 export type TagComponent = Component<true>
 
 type ComponentData<T> = HashMap<Entity,T>

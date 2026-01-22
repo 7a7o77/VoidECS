@@ -1,6 +1,6 @@
 --!strict
 local export = {}
-type HashMap<K,V> = {[K]:V}
+type HashMap<K=any,V=any> = {[K]:V}
 
 function export.MixTables<A,B,C,D>(TableA:HashMap<A,B>,TableB:HashMap<C,D>)
     local Result = table.clone(TableA) ::{any}
@@ -65,7 +65,7 @@ function export.HasGap<V>(Input:{[number]:V})
     end
 end
 
-function export.IsEmpty<K,V>(Input:{[K]:V})
+function export.IsEmpty(Input:HashMap)
     return next(Input) == nil
 end
 

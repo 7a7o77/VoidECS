@@ -166,8 +166,7 @@ do --Iteration logic.
         end)
     end
 
-    -- TODO : Add typechecking.
-    function export.Query<T...>(...:Component)
+    function export.Query(...:never)
         local Args = {...} :: {Component}
         local PassedEntites:HashMap<Entity,true> = {}
         
@@ -242,4 +241,14 @@ do --Deletion logic.
     end
 end
 
-return export
+type EntityUnorderedList = HashMap<Entity,true>
+
+type Query = (<A>(Component<A>) -> (setmetatable<EntityUnorderedList, { __iter: (any) -> () -> (Entity, A) }>))
+  & (<A, B>(Component<A>, Component<B>) -> (setmetatable<EntityUnorderedList, { __iter: (any) -> () -> (Entity, A, B) }>))
+  & (<A, B, C>(Component<A>, Component<B>, Component<C>) -> (setmetatable<EntityUnorderedList, { __iter: (any) -> () -> (Entity, A, B, C) }>))
+  & (<A, B, C, D>(Component<A>, Component<B>, Component<C>, Component<D>) -> (setmetatable<EntityUnorderedList, { __iter: (any) -> () -> (Entity, A, B, C, D) }>))
+  & (<A, B, C, D, E>(Component<A>, Component<B>, Component<C>, Component<D>, Component<E>,...Component) -> (setmetatable<EntityUnorderedList, { __iter: (any) -> () -> (Entity, A, B, C, D, E,...any) }>))
+
+return (export::any) :: typeof(export) & {
+  Query:Query
+}
